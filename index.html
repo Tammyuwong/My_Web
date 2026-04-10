@@ -9,15 +9,18 @@
       --bg:#f6f8fb; --card:#ffffff; --accent:#5b4df5; --muted:#6b6f76;
       --success:#e8f8ef; --success-border:#27ae60; --danger:#ff6b6b;
       --soft-border:#eef1fb;
+      --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans TC', 'Noto Sans', Helvetica, Arial, sans-serif;
     }
 
     /* Base */
     html,body{height:100%;}
     body{
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans TC",NotoSans,Helvetica,Arial,sans-serif;
+      font-family:var(--font);
       background:var(--bg);margin:0;padding:28px;color:#1f2937;line-height:1.45;
       -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
     }
+    /* Ensure common form controls and table use the same font */
+    select, input, button, table, th, td, label, .stat, .card, .remaining-badge, .amount-badge { font-family: var(--font); }
     .container{max-width:1100px;margin:0 auto;}
     h1{color:var(--accent);margin:0 0 14px;font-size:22px;font-weight:700;}
 
@@ -41,6 +44,14 @@
     .btn-link{background:transparent;color:var(--accent);padding:6px 10px;border-radius:8px;border:1px solid transparent;cursor:pointer}
     .btn-link:hover{background:rgba(91,77,245,0.06)}
     .btn-danger{background:var(--danger);color:#fff;border:none;padding:6px 10px;border-radius:8px;cursor:pointer}
+    /* Prominent primary button for actions like '核銷' */
+    .btn-primary{background:var(--accent);color:#fff;border:none;padding:6px 10px;border-radius:8px;cursor:pointer;font-weight:700}
+    .btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 14px rgba(91,77,245,0.12)}
+    /* Subdued secondary button for less prominent actions */
+    .btn-secondary{background:#f3f4f6;color:#111;border:1px solid #e6e9f2;padding:6px 10px;border-radius:8px;cursor:pointer}
+    /* Plain (no background) button for weak actions */
+    .btn-plain{background:transparent;color:var(--muted);border:none;padding:6px 10px;border-radius:8px}
+    .btn-plain:hover{color:var(--accent);background:transparent}
 
     /* Table */
     table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px;background:transparent}
@@ -53,6 +64,9 @@
 
     .fully-redeemed{background:var(--success);border-left:4px solid var(--success-border)}
     .remaining-badge{display:inline-block;padding:6px 10px;border-radius:14px;background:#eef5ff;color:#0b3b8a;font-weight:700;font-size:13px}
+
+    /* Unified cell text for issuer and status columns */
+    .cell-text{font-family:var(--font);font-size:14px;color:#1f2937;display:inline-block;vertical-align:middle}
 
     /* Stats */
     .stats{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}
@@ -224,6 +238,7 @@
             <th>核銷狀態</th>
             <!-- 已移除最後核銷日期欄位 -->
             <th>操作</th>
+            <th>核銷</th>
           </tr>
         </thead>
         <tbody id="listBody"></tbody>
@@ -275,7 +290,7 @@
       const tbody=$('listBody'); tbody.innerHTML='';
       // 只顯示尚未全額核銷的紀錄 (remaining > 0)
       const visible = records.filter(r => Number(r.remaining) > 0);
-      if(visible.length === 0){ tbody.innerHTML = '<tr><td colspan="6">目前沒有紀錄</td></tr>'; computeStats(); return; }
+      if(visible.length === 0){ tbody.innerHTML = '<tr><td colspan="7">目前沒有紀錄</td></tr>'; computeStats(); return; }
       records.forEach((r,idx)=>{
         if(Number(r.remaining) <= 0) return; // skip fully redeemed
         const tr=document.createElement('tr');
@@ -283,13 +298,15 @@
           <td>${isoToDisplay(r.drawDate)}</td>
             <td><span class="amount-badge amount-${r.amount}">${r.amount}</span></td>
           <td><span class="remaining-badge">${r.remaining}</span></td>
-          <td>${r.issuer || ''}</td>
-          <td>未全額</td>
+          <td><span class="cell-text">${r.issuer || ''}</span></td>
+          <td><span class="cell-text">未全額</span></td>
           <!-- 最後核銷日期已移除 -->
           <td>
-            <button class="btn-link" onclick="redeem(${idx})">核銷</button>
-            <button class="btn-link" onclick="editRecord(${idx})">編輯</button>
-            <button class="btn-danger" onclick="removeRecord(${idx})">刪除</button>
+            <button class="btn-link btn-plain" onclick="editRecord(${idx})">編輯</button>
+            <button class="btn-link btn-plain" onclick="removeRecord(${idx})">刪除</button>
+          </td>
+          <td>
+            <button class="btn-primary" onclick="redeem(${idx})">核銷</button>
           </td>
         `;
         tbody.appendChild(tr);
