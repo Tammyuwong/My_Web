@@ -60,10 +60,37 @@
     .stat .small{font-size:12px;color:var(--muted);margin-bottom:6px}
     .stat .value{font-size:20px;font-weight:800;color:#1f2937}
 
+    /* Amount badges (different colors per denomination) */
+    .amount-badge{display:inline-block;padding:6px 10px;border-radius:12px;font-weight:800;font-size:13px}
+    /* vivid styles similar to 50 MOP */
+    .amount-10{background:#ff6b6b;color:#ffffff;box-shadow:inset 0 -2px 0 rgba(0,0,0,0.08)}
+    .amount-20{background:#ff9f43;color:#ffffff;box-shadow:inset 0 -2px 0 rgba(0,0,0,0.06)}
+    .amount-50{background:#ffd54f;color:#5a3200;box-shadow:inset 0 -2px 0 rgba(0,0,0,0.06)}
+    .amount-100{background:#2f9bff;color:#012a49;box-shadow:inset 0 -2px 0 rgba(0,0,0,0.06)}
+    .amount-200{background:#2ed573;color:#063e20;box-shadow:inset 0 -2px 0 rgba(0,0,0,0.06)}
+
     /* small screens adjustments */
     @media (max-width:720px){
       .stat{flex:1 1 100%}
       th,td{padding:8px}
+    }
+    /* Additional responsive rules for smaller phones */
+    @media (max-width:480px){
+      body{padding:14px}
+      h1{font-size:18px}
+      .container{max-width:100%;padding:0 8px}
+      .card{padding:12px;border-radius:10px}
+      .row{gap:10px}
+      .col{flex:1 1 100%;min-width:0}
+      select,input[type="date"],input[type="number"]{padding:12px;font-size:15px}
+      .actions{flex-direction:column;align-items:stretch;gap:8px}
+      button{padding:10px;border-radius:8px;font-size:15px}
+      .stat .value{font-size:18px}
+      .amount-badge{padding:5px 8px;font-size:12px}
+      /* Make table horizontally scrollable on small screens */
+      table{display:block;width:100%;overflow:auto;-webkit-overflow-scrolling:touch}
+      thead,tbody,tr{display:table;width:100%;table-layout:fixed}
+      th,td{white-space:nowrap;padding:8px}
     }
   </style>
 </head>
@@ -254,7 +281,7 @@
         const tr=document.createElement('tr');
         tr.innerHTML = `
           <td>${isoToDisplay(r.drawDate)}</td>
-          <td>${r.amount}</td>
+            <td><span class="amount-badge amount-${r.amount}">${r.amount}</span></td>
           <td><span class="remaining-badge">${r.remaining}</span></td>
           <td>${r.issuer || ''}</td>
           <td>未全額</td>
@@ -318,6 +345,102 @@
     // 清空表單功能已移除
 
     render();
+
+    /* --- Select option color helpers --- */
+    function getAmountColors(v){
+      switch(String(v)){
+        case '10': return {bg:'#ff6b6b', color:'#ffffff', border:'#ff9a9a'};
+        case '20': return {bg:'#ff9f43', color:'#ffffff', border:'#ffb97a'};
+        case '50': return {bg:'#ffd54f', color:'#5a3200', border:'#ffe9a8'};
+        case '100': return {bg:'#2f9bff', color:'#012a49', border:'#8ec6ff'};
+        case '200': return {bg:'#2ed573', color:'#063e20', border:'#a8f1c8'};
+        default: return {bg:'#ffffff', color:'#111', border:'#e6eaf7'};
+      }
+    }
+
+    function getIssuerColors(v){
+      switch(String(v)){
+        case 'MPay': return {bg:'#eef2ff', color:'#3b2dff', border:'#e6e8ff'};
+        case '國際': return {bg:'#fff7f0', color:'#b45a00', border:'#ffe9d1'};
+        case 'UePay': return {bg:'#e8f5ff', color:'#0b66b3', border:'#cfeaff'};
+        case '支付寶': return {bg:'#fff0f6', color:'#b3008a', border:'#ffd7f0'};
+        case '中銀': return {bg:'#eefaf0', color:'#0a7a3a', border:'#dff4e6'};
+        default: return {bg:'#ffffff', color:'#111', border:'#e6eaf7'};
+      }
+    }
+
+    function getDateColors(v){
+      if(!v) return {bg:'#ffffff', color:'#111', border:'#e6eaf7'};
+      const m = (v.split('-')[1]||'')*1;
+      switch(m){
+        case 4: return {bg:'#e8f5ff', color:'#0b66b3', border:'#cfeaff'}; // Apr
+        case 5: return {bg:'#eafaf1', color:'#0a7a3a', border:'#dff4e6'}; // May
+        case 6: return {bg:'#fff8e1', color:'#8a6b00', border:'#fff1c4'}; // Jun
+        default: return {bg:'#ffffff', color:'#111', border:'#e6eaf7'};
+      }
+    }
+
+    function applySelectColor(sel){
+      if(!sel) return;
+      // New behavior: show a multi-color hint (gradient) when NOT selected;
+      // when user selects a value, keep default look (do not apply colors).
+      function buildGradient(cols){
+        if(!cols || !cols.length) return '';
+        const step = 100 / cols.length;
+        return 'linear-gradient(90deg,' + cols.map((c,i)=>`${c} ${i*step}% ${(i+1)*step}%`).join(',') + ')';
+      }
+
+      if(!sel.value){
+        let cols = ['#ffffff'];
+        if(sel.id === 'amount') cols = ['#fff0f0','#fff8f0','#ffd54f','#e8f5ff','#eafaf1'];
+        else if(sel.id === 'issuer') cols = ['#eef2ff','#fff7f0','#e8f5ff','#fff0f6','#eefaf0'];
+        else if(sel.id === 'drawDate') cols = ['#e8f5ff','#eafaf1','#fff8e1'];
+
+        sel.style.backgroundImage = buildGradient(cols);
+        sel.style.backgroundRepeat = 'no-repeat';
+        sel.style.backgroundSize = '100% 100%';
+        sel.style.color = ''; sel.style.borderColor = '';
+      } else {
+        // selected: clear any hint styling and keep default appearance
+        sel.style.backgroundImage = '';
+        sel.style.backgroundColor = '';
+        sel.style.color = '';
+        sel.style.borderColor = '';
+      }
+    }
+
+    ['issuer','amount','drawDate'].forEach(id=>{
+      const s = $(id);
+      if(!s) return;
+      s.addEventListener('change', ()=> applySelectColor(s));
+      // apply on init
+      applySelectColor(s);
+    });
+
+    // Style each <option> element with a background color where possible.
+    // Note: Some browsers ignore option styling; this is best-effort.
+    function styleOptions(){
+      const amountPal = {
+        '10': {bg:'#ff6b6b', color:'#ffffff'},
+        '20': {bg:'#ff9f43', color:'#ffffff'},
+        '50': {bg:'#ffd54f', color:'#5a3200'},
+        '100':{bg:'#2f9bff', color:'#012a49'},
+        '200':{bg:'#2ed573', color:'#063e20'}
+      };
+      const issuerPal = {
+        'MPay':{bg:'#eef2ff', color:'#3b2dff'}, '國際':{bg:'#fff7f0', color:'#b45a00'},
+        'UePay':{bg:'#e8f5ff', color:'#0b66b3'}, '支付寶':{bg:'#fff0f6', color:'#b3008a'},
+        '中銀':{bg:'#eefaf0', color:'#0a7a3a'}
+      };
+      const datePalette = ['#fef6ff','#fff8e1','#eef8ff','#fff7f0','#eefaf0','#fff6f0'];
+
+      const a = $('amount'); if(a){ for(let i=0;i<a.options.length;i++){ const opt=a.options[i]; const p=amountPal[opt.value]; if(p){ opt.style.backgroundColor=p.bg; opt.style.color=p.color; } } }
+      const iss = $('issuer'); if(iss){ for(let i=0;i<iss.options.length;i++){ const opt=iss.options[i]; const p=issuerPal[opt.value]; if(p){ opt.style.backgroundColor=p.bg; opt.style.color=p.color; } } }
+
+      const d = $('drawDate'); if(d){ for(let i=0;i<d.options.length;i++){ const opt=d.options[i]; if(!opt.value) continue; const p = datePalette[i % datePalette.length]; opt.style.backgroundColor = p; opt.style.color = '#111'; } }
+    }
+
+    styleOptions();
   </script>
   <script>
     // 匯出 / 匯入 localStorage（只處理 localStorage 內的鍵值對）
