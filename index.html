@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta id="viewportMeta" name="viewport" content="width=device-width,initial-scale=1" />
   <title>消費券紀錄 — 核銷與統計</title>
   <style>
     :root{
@@ -70,6 +70,50 @@
 <body>
   <div class="container">
     <h1>消費券紀錄 — 核銷與統計</h1>
+
+    <script>
+      // 手機自動縮放（優化 16:9 直屏）
+      (function(){
+        function isPortraitTall(){
+          const w = window.innerWidth || document.documentElement.clientWidth;
+          const h = window.innerHeight || document.documentElement.clientHeight;
+          if(!w || !h) return false;
+          if(h <= w) return false; // not portrait
+          const ar = h / w;
+          // Accept common tall phone ratios including 16:9 and 20:9 (~1.78 to ~2.22)
+          return ar >= 1.6 && ar <= 2.4;
+        }
+
+        function adjustScale(){
+          try{
+            const meta = document.getElementById('viewportMeta');
+            if(!meta) return;
+            const screenW = window.innerWidth || document.documentElement.clientWidth;
+            // Prefer measuring the form row (三欄) width so we ensure those columns fit
+            const row = document.querySelector('.card form .row') || document.querySelector('.row') || document.documentElement;
+            const contentW = row ? Math.max(row.scrollWidth || 0, document.documentElement.scrollWidth || 0) : document.documentElement.scrollWidth || 0;
+
+            let scale = 1;
+            if(isPortraitTall()){
+              // On tall 16:9 phones, prefer to fit the form row into viewport with a small padding
+              if(contentW > 0){
+                const desired = (screenW - 12) / contentW; // 12px padding allowance
+                scale = Math.max(0.6, Math.min(1, desired));
+              }
+            } else if(contentW > screenW){
+              // Fallback: general fit-to-width behavior
+              scale = Math.max(0.5, Math.min(1, screenW / contentW));
+            }
+
+            meta.setAttribute('content', `width=device-width, initial-scale=${scale}, maximum-scale=2`);
+          }catch(e){ /* ignore */ }
+        }
+
+        window.addEventListener('load', function(){ setTimeout(adjustScale, 80); });
+        window.addEventListener('orientationchange', function(){ setTimeout(adjustScale, 300); });
+        window.addEventListener('resize', function(){ setTimeout(adjustScale, 150); });
+      })();
+    </script>
 
     <!-- 新增券表單 -->
     <div class="card">
