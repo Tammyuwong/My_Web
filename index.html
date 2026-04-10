@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>消費券紀錄 — 核銷與統計</title>
+  <style>
+    :root{
+      --bg:#f6f8fb; --card:#ffffff; --accent:#5b4df5; --muted:#6b6f76;
+      --success:#e8f8ef; --success-border:#27ae60; --danger:#ff6b6b;
+      --soft-border:#eef1fb;
+    }
+
+    /* Base */
+    html,body{height:100%;}
+    body{
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,"Noto Sans TC",NotoSans,Helvetica,Arial,sans-serif;
+      background:var(--bg);margin:0;padding:28px;color:#1f2937;line-height:1.45;
+      -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+    }
+    .container{max-width:1100px;margin:0 auto;}
+    h1{color:var(--accent);margin:0 0 14px;font-size:22px;font-weight:700;}
+
+    /* Cards */
+    .card{background:var(--card);padding:16px;border-radius:12px;border:1px solid var(--soft-border);box-shadow:0 6px 18px rgba(18,24,50,0.04);margin-bottom:18px;}
+    .card > strong{display:block;margin-bottom:10px;font-size:15px;color:var(--muted);}
+
+    /* Form layout */
+    .row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:8px;align-items:flex-start}
+    label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px;}
+    select,input[type="date"],input[type="number"]{padding:10px;border:1px solid #e6eaf7;border-radius:8px;width:100%;box-sizing:border-box;background:#fff}
+    .col{flex:1 1 220px;min-width:160px}
+    @media (max-width:720px){ .row{flex-direction:column} .col{min-width:unset} }
+
+    /* Actions & buttons */
+    .actions{display:flex;gap:8px;align-items:center;margin-top:8px}
+    button{background:var(--accent);color:#fff;border:none;padding:8px 14px;border-radius:10px;cursor:pointer;font-weight:600;transition:all .12s ease}
+    button:hover{transform:translateY(-1px);box-shadow:0 6px 14px rgba(91,77,245,0.12)}
+    button:active{transform:translateY(0)}
+    button.secondary{background:#f3f4f6;color:#111;border:1px solid #e6e9f2}
+    .btn-link{background:transparent;color:var(--accent);padding:6px 10px;border-radius:8px;border:1px solid transparent;cursor:pointer}
+    .btn-link:hover{background:rgba(91,77,245,0.06)}
+    .btn-danger{background:var(--danger);color:#fff;border:none;padding:6px 10px;border-radius:8px;cursor:pointer}
+
+    /* Table */
+    table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px;background:transparent}
+    th,td{padding:10px 12px;border-bottom:1px solid #f4f6fb;vertical-align:middle}
+    th{background:#fbfcff;color:var(--muted);font-weight:700;font-size:13px}
+    tbody tr:nth-child(even){background:rgba(245,247,255,0.6)}
+    tbody tr:hover{background:rgba(240,243,255,0.9)}
+    /* keep list table centered as requested */
+    #listTable th, #listTable td { text-align:center; }
+
+    .fully-redeemed{background:var(--success);border-left:4px solid var(--success-border)}
+    .remaining-badge{display:inline-block;padding:6px 10px;border-radius:14px;background:#eef5ff;color:#0b3b8a;font-weight:700;font-size:13px}
+
+    /* Stats */
+    .stats{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}
+    .stat{flex:1 1 160px;background:#ffffff;padding:14px;border-radius:10px;border:1px solid var(--soft-border);text-align:center}
+    .stat .small{font-size:12px;color:var(--muted);margin-bottom:6px}
+    .stat .value{font-size:20px;font-weight:800;color:#1f2937}
+
+    /* small screens adjustments */
+    @media (max-width:720px){
+      .stat{flex:1 1 100%}
+      th,td{padding:8px}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>消費券紀錄 — 核銷與統計</h1>
+
+    <!-- 新增券表單 -->
+    <div class="card">
+      <form id="voucherForm">
+        <div class="row">
+          <div class="col">
+            <label><strong>發券機構</strong></label>
+            <select id="issuer">
+              <option value="">-- 請選擇 --</option>
+              <option value="MPay">MPay</option>
+              <option value="國際">國際</option>
+              <option value="UePay">UePay</option>
+              <option value="支付寶">支付寶</option>
+              <option value="中銀">中銀</option>
+            </select>
+          </div>
+          <div class="col">
+            <label><strong>面額 MOP</strong></label>
+            <select id="amount" required>
+              <option value="">-- 請選擇 --</option>
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="200">200</option>
+            </select>
+          </div>
+          <div class="col">
+            <label><strong>抽中日期</strong></label>
+            <select id="drawDate" required>
+              <option value="">-- 請選擇 --</option>
+              <option value="2026-04-10">10/04/2026</option>
+              <option value="2026-04-11">11/04/2026</option>
+              <option value="2026-04-12">12/04/2026</option>
+              <option value="2026-04-17">17/04/2026</option>
+              <option value="2026-04-18">18/04/2026</option>
+              <option value="2026-04-19">19/04/2026</option>
+              <option value="2026-04-24">24/04/2026</option>
+              <option value="2026-04-25">25/04/2026</option>
+              <option value="2026-04-26">26/04/2026</option>
+              <option value="2026-05-01">01/05/2026</option>
+              <option value="2026-05-02">02/05/2026</option>
+              <option value="2026-05-03">03/05/2026</option>
+              <option value="2026-05-08">08/05/2026</option>
+              <option value="2026-05-09">09/05/2026</option>
+              <option value="2026-05-10">10/05/2026</option>
+              <option value="2026-05-15">15/05/2026</option>
+              <option value="2026-05-16">16/05/2026</option>
+              <option value="2026-05-17">17/05/2026</option>
+              <option value="2026-05-22">22/05/2026</option>
+              <option value="2026-05-23">23/05/2026</option>
+              <option value="2026-05-24">24/05/2026</option>
+              <option value="2026-05-29">29/05/2026</option>
+              <option value="2026-05-30">30/05/2026</option>
+              <option value="2026-05-31">31/05/2026</option>
+              <option value="2026-06-05">05/06/2026</option>
+              <option value="2026-06-06">06/06/2026</option>
+              <option value="2026-06-07">07/06/2026</option>
+              <option value="2026-06-12">12/06/2026</option>
+              <option value="2026-06-13">13/06/2026</option>
+              <option value="2026-06-14">14/06/2026</option>
+            </select>
+            <div class="actions" style="margin-top:8px;">
+              <button type="submit" id="saveBtn">新增紀錄</button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- 列表 -->
+    <div class="card">
+      <strong>已取得的消費券</strong>
+      <table id="listTable">
+        <thead>
+          <tr>
+            <th>抽中日期</th>
+            <th>面額</th>
+            <th>剩餘可核銷</th>
+            <th>發券機構</th>
+            <th>核銷狀態</th>
+            <!-- 已移除最後核銷日期欄位 -->
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="listBody"></tbody>
+      </table>
+    </div>
+
+    <!-- 統計 -->
+    <div class="card">
+      <strong>統計</strong>
+      <div class="stats">
+        <div class="stat"><div class="small">總筆數</div><div id="statCount">0</div></div>
+        <div class="stat"><div class="small">總中獎金額 MOP</div><div id="statTotal">0</div></div>
+        <div class="stat"><div class="small">已核銷筆數</div><div id="statRedeemedCount">0</div></div>
+        <div class="stat"><div class="small">已核銷金額 MOP</div><div id="statRedeemedTotal">0</div></div>
+        <div class="stat"><div class="small">平均面額 MOP</div><div id="statAvg">0</div></div>
+        <div style="width:100%;margin-top:10px;display:flex;gap:8px;align-items:center;">
+          <button id="exportBtn" class="btn-link">匯出 JSON</button>
+          <button id="importBtn" class="btn-link">匯入 JSON</button>
+          <input type="file" id="importFile" accept="application/json" style="display:none" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'voucher_with_stats';
+    let records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    let editIndex = -1;
+    const $ = id => document.getElementById(id);
+
+    function saveToStorage(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); }
+    function isoToDisplay(iso){ if(!iso) return ''; const p=iso.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; }
+    function todayIso(){ return new Date().toISOString().slice(0,10); }
+
+    function computeStats(){
+      const count = records.length;
+      const total = records.reduce((s,r)=>s+(Number(r.amount)||0),0);
+      const redeemedCount = records.filter(r=>Number(r.remaining)<=0).length;
+      const redeemedTotal = records.reduce((s,r)=>s+((Number(r.amount)-Number(r.remaining))||0),0);
+      const avg = count? total/count : 0;
+      $('statCount').textContent = count;
+      $('statTotal').textContent = total.toFixed(0);
+      $('statRedeemedCount').textContent = redeemedCount;
+      $('statRedeemedTotal').textContent = redeemedTotal.toFixed(0);
+      $('statAvg').textContent = avg.toFixed(2);
+    }
+
+    function render(){
+      const tbody=$('listBody'); tbody.innerHTML='';
+      // 只顯示尚未全額核銷的紀錄 (remaining > 0)
+      const visible = records.filter(r => Number(r.remaining) > 0);
+      if(visible.length === 0){ tbody.innerHTML = '<tr><td colspan="6">目前沒有紀錄</td></tr>'; computeStats(); return; }
+      records.forEach((r,idx)=>{
+        if(Number(r.remaining) <= 0) return; // skip fully redeemed
+        const tr=document.createElement('tr');
+        tr.innerHTML = `
+          <td>${isoToDisplay(r.drawDate)}</td>
+          <td>${r.amount}</td>
+          <td><span class="remaining-badge">${r.remaining}</span></td>
+          <td>${r.issuer || ''}</td>
+          <td>未全額</td>
+          <!-- 最後核銷日期已移除 -->
+          <td>
+            <button class="btn-link" onclick="redeem(${idx})">核銷</button>
+            <button class="btn-link" onclick="editRecord(${idx})">編輯</button>
+            <button class="btn-danger" onclick="removeRecord(${idx})">刪除</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      computeStats();
+    }
+
+    function redeem(idx){
+      const r = records[idx]; if(!r) return;
+      const max = Number(r.remaining) || 0;
+      if(max <= 0){ alert('此券已全數核銷。'); return; }
+      let q = prompt(`輸入核銷金額 (剩餘 ${r.remaining})`, max);
+      if(q === null) return;
+      q = Math.max(0, Math.min(Number(q) || 0, max));
+      r.remaining = (Number(r.remaining) - q).toString();
+      // lastRedeemed 已移除，不再記錄最後核銷日期
+      saveToStorage(); render();
+    }
+
+    function editRecord(idx){
+      const r = records[idx]; if(!r) return;
+      $('issuer').value = r.issuer || '';
+      $('amount').value = r.amount || '';
+      $('drawDate').value = r.drawDate || '';
+      editIndex = idx; $('saveBtn').textContent = '更新紀錄';
+    }
+
+    function removeRecord(idx){
+      if(!confirm('確定要刪除此筆紀錄？')) return;
+      records.splice(idx,1); saveToStorage(); render();
+    }
+
+    document.getElementById('voucherForm').addEventListener('submit', function(e){
+      e.preventDefault();
+      const issuer = $('issuer').value;
+      const amount = $('amount').value;
+      const drawDate = $('drawDate').value;
+      if(!amount || !drawDate){ alert('請選擇日期與面額'); return; }
+      if(editIndex >= 0){
+        const r = records[editIndex];
+        const prevAmount = Number(r.amount) || 0;
+        const prevRedeemed = prevAmount - (Number(r.remaining) || 0);
+        r.issuer = issuer; r.amount = amount; r.drawDate = drawDate;
+        r.remaining = Math.max(0, Number(amount) - prevRedeemed).toString();
+        editIndex = -1; $('saveBtn').textContent = '新增紀錄';
+      } else {
+        const rec = { issuer, amount, drawDate, remaining: amount };
+        records.push(rec);
+      }
+      saveToStorage(); e.target.reset(); render();
+    });
+
+    // 清空表單功能已移除
+
+    render();
+  </script>
+  <script>
+    // 匯出 / 匯入 localStorage（只處理 localStorage 內的鍵值對）
+    function exportLocalStorage(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY) || '[]';
+        const obj = {};
+        try{ obj[STORAGE_KEY] = JSON.parse(raw); } catch(e){ obj[STORAGE_KEY] = raw; }
+        const data = JSON.stringify(obj, null, 2);
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = STORAGE_KEY + '.json'; document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(url);
+      }catch(err){ alert('匯出失敗: '+err); }
+    }
+
+    function importVoucherKey(obj){
+      try{
+        if(!obj.hasOwnProperty(STORAGE_KEY)) { alert('匯入檔案內找不到 ' + STORAGE_KEY + ' 鍵。'); return; }
+        const incoming = obj[STORAGE_KEY] || [];
+        const existingRaw = localStorage.getItem(STORAGE_KEY) || '[]';
+        let existing = [];
+        try{ existing = JSON.parse(existingRaw); }catch(e){ existing = []; }
+        const overwrite = confirm('按「確定」將覆寫現有的 voucher_with_stats；按「取消」將合併匯入（加入現有紀錄）。');
+        if(overwrite){
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(incoming));
+        } else {
+          const merged = Array.isArray(existing) ? existing.concat(incoming) : [].concat(existing, incoming);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+        }
+        records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        render();
+        alert('匯入完成');
+      }catch(err){ alert('匯入失敗: '+err); }
+    }
+
+    document.getElementById('exportBtn').addEventListener('click', exportLocalStorage);
+    document.getElementById('importBtn').addEventListener('click', ()=> document.getElementById('importFile').click());
+    document.getElementById('importFile').addEventListener('change', function(e){
+      const file = this.files && this.files[0]; if(!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try{
+          const obj = JSON.parse(reader.result);
+          if(typeof obj !== 'object' || obj === null) throw new Error('檔案格式錯誤');
+          importVoucherKey(obj);
+        }catch(err){ alert('讀取檔案失敗: '+err); }
+      };
+      reader.readAsText(file);
+      this.value = null;
+    });
+  </script>
+</body>
+</html>
