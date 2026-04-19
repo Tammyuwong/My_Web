@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="zh-Hant">
 <head>
@@ -169,6 +170,7 @@
               <option value="UePay">UePay</option>
               <option value="支付寶">支付寶</option>
               <option value="中銀">中銀</option>
+              <option value="工商">工商</option>
             </select>
           </div>
           <div class="col">
@@ -233,7 +235,8 @@
           <tr>
             <th>抽中日期</th>
             <th>面額</th>
-            <th>剩餘可核銷</th>
+              <th>剩餘可核銷</th>
+              <th>到期日</th>
             <th>發券機構</th>
             <th>核銷狀態</th>
             <!-- 已移除最後核銷日期欄位 -->
@@ -286,27 +289,66 @@
       $('statAvg').textContent = avg.toFixed(2);
     }
 
+    // 檢查是否已到期 — 規則：抽中日（local） + 7 天，於當天 00:00 生效
+    function parseIsoDateToLocal(iso){
+      const parts = String(iso || '').split('-').map(n=>Number(n));
+      if(parts.length < 3 || isNaN(parts[0]) || isNaN(parts[1]) || isNaN(parts[2])) return null;
+      return new Date(parts[0], parts[1]-1, parts[2], 0, 0, 0);
+    }
+
+    function isExpired(record){
+      if(!record || !record.drawDate) return false;
+      const draw = parseIsoDateToLocal(record.drawDate);
+      if(!draw) return false;
+      // 計算抽中日之「下一個星期五」(local)，若當日為星期五也視為下一個星期五（+7 天）
+      const drawDay = draw.getDay(); // 0=Sun .. 5=Fri ..6=Sat
+      const targetWeekday = 5; // Friday
+      let delta = (targetWeekday - drawDay + 7) % 7;
+      if(delta === 0) delta = 7; // 當天若為星期五，取下一個星期五
+      const expiry = new Date(draw.getTime());
+      expiry.setDate(expiry.getDate() + delta);
+      // expiry 為當地時間的到期日 00:00
+      return new Date() >= expiry;
+    }
+
+    // 取得抽中日對應的到期日（下一個星期五 00:00，若當日為星期五則為下週五）
+    function getExpiryLocal(drawIso){
+      const draw = parseIsoDateToLocal(drawIso);
+      if(!draw) return null;
+      const drawDay = draw.getDay();
+      const targetWeekday = 5; // Friday
+      let delta = (targetWeekday - drawDay + 7) % 7;
+      if(delta === 0) delta = 7;
+      const expiry = new Date(draw.getTime());
+      expiry.setDate(expiry.getDate() + delta);
+      return expiry;
+    }
+
+    function formatLocalDate(d){ if(!d) return ''; const dd=String(d.getDate()).padStart(2,'0'); const mm=String(d.getMonth()+1).padStart(2,'0'); return `${dd}/${mm}/${d.getFullYear()}`; }
+
     function render(){
       const tbody=$('listBody'); tbody.innerHTML='';
-      // 只顯示尚未全額核銷的紀錄 (remaining > 0)
-      const visible = records.filter(r => Number(r.remaining) > 0);
-      if(visible.length === 0){ tbody.innerHTML = '<tr><td colspan="7">目前沒有紀錄</td></tr>'; computeStats(); return; }
-      records.forEach((r,idx)=>{
+      // 只顯示尚未全額核銷且尚未到期的紀錄 (remaining > 0 且未過期)
+      const visible = records.filter(r => Number(r.remaining) > 0 && !isExpired(r));
+      if(visible.length === 0){ tbody.innerHTML = '<tr><td colspan="8">目前沒有紀錄</td></tr>'; computeStats(); return; }
+      visible.forEach((r)=>{
         if(Number(r.remaining) <= 0) return; // skip fully redeemed
+        const realIdx = records.indexOf(r);
         const tr=document.createElement('tr');
         tr.innerHTML = `
           <td>${isoToDisplay(r.drawDate)}</td>
             <td><span class="amount-badge amount-${r.amount}">${r.amount}</span></td>
           <td><span class="remaining-badge">${r.remaining}</span></td>
+          <td>${formatLocalDate(getExpiryLocal(r.drawDate))}</td>
           <td><span class="cell-text">${r.issuer || ''}</span></td>
           <td><span class="cell-text">未全額</span></td>
           <!-- 最後核銷日期已移除 -->
           <td>
-            <button class="btn-link btn-plain" onclick="editRecord(${idx})">編輯</button>
-            <button class="btn-link btn-plain" onclick="removeRecord(${idx})">刪除</button>
+            <button class="btn-link btn-plain" onclick="editRecord(${realIdx})">編輯</button>
+            <button class="btn-link btn-plain" onclick="removeRecord(${realIdx})">刪除</button>
           </td>
           <td>
-            <button class="btn-primary" onclick="redeem(${idx})">核銷</button>
+            <button class="btn-primary" onclick="redeem(${realIdx})">核銷</button>
           </td>
         `;
         tbody.appendChild(tr);
@@ -363,6 +405,8 @@
 
     render();
 
+    // 測試區塊已移除
+
     /* --- Select option color helpers --- */
     function getAmountColors(v){
       switch(String(v)){
@@ -382,6 +426,7 @@
         case 'UePay': return {bg:'#e8f5ff', color:'#0b66b3', border:'#cfeaff'};
         case '支付寶': return {bg:'#fff0f6', color:'#b3008a', border:'#ffd7f0'};
         case '中銀': return {bg:'#eefaf0', color:'#0a7a3a', border:'#dff4e6'};
+        case '工商': return {bg:'#fffaf0', color:'#a85a00', border:'#ffe9d1'};
         default: return {bg:'#ffffff', color:'#111', border:'#e6eaf7'};
       }
     }
@@ -447,7 +492,7 @@
       const issuerPal = {
         'MPay':{bg:'#eef2ff', color:'#3b2dff'}, '國際':{bg:'#fff7f0', color:'#b45a00'},
         'UePay':{bg:'#e8f5ff', color:'#0b66b3'}, '支付寶':{bg:'#fff0f6', color:'#b3008a'},
-        '中銀':{bg:'#eefaf0', color:'#0a7a3a'}
+        '中銀':{bg:'#eefaf0', color:'#0a7a3a'}, '工商':{bg:'#fffaf0', color:'#a85a00'}
       };
       const datePalette = ['#fef6ff','#fff8e1','#eef8ff','#fff7f0','#eefaf0','#fff6f0'];
 
