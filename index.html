@@ -86,6 +86,16 @@
     #listTable td.amount-cell, #listTable td.issuer-cell, #listTable td.remaining-cell, #listTable td.expiry-cell, #listTable td.ops-cell, #listTable td.redeem-cell {
       vertical-align:middle; text-align:center; padding-top:14px; padding-bottom:14px;
     }
+    /* 放大：已取得的消費券（list）表格標題與內容更顯眼 */
+    #listTable thead th{font-size:16px;color:#0f1724;font-weight:800;padding:12px 14px}
+    #listTable tbody td{font-size:15px;padding-top:16px;padding-bottom:16px}
+    /* 調整徽章大小以便與放大字級匹配 */
+    #listTable .amount-badge{padding:10px 14px;border-radius:18px;font-size:16px;min-width:56px}
+    #listTable .issuer-badge{padding:10px 16px;border-radius:18px;font-size:15px;min-width:88px}
+    #listTable .remaining-badge{padding:8px 12px;border-radius:16px;font-size:14px;min-width:56px}
+    /* 按鈕也稍微放大以配合整體尺度 */
+    #listTable .btn-primary{padding:10px 14px;font-size:14px}
+    #listTable .btn-plain,#listTable .btn-link{font-size:14px;padding:8px 10px}
     /* Make amount and issuer badges visually centered and consistent */
     .amount-badge{display:inline-flex;align-items:center;justify-content:center;padding:8px 12px;border-radius:16px;font-weight:900;font-size:14px;min-width:44px}
     .issuer-badge{display:inline-flex;align-items:center;justify-content:center;padding:8px 14px;border-radius:16px;font-weight:900;font-size:14px;min-width:72px}
@@ -111,12 +121,29 @@
     /* Enhanced stat table styling for clearer layout */
     .stat-tables{width:100%;align-items:flex-start}
     .stat-tables .stat-table{width:48%;min-width:220px;background:#fff;border-radius:10px;box-shadow:0 6px 18px rgba(18,24,50,0.04);overflow:hidden;border:1px solid var(--soft-border)}
-    .stat-tables .stat-table thead th{background:transparent;text-align:left;padding:12px 16px;font-weight:700;color:var(--muted)}
-    .stat-tables .stat-table tbody td:first-child{text-align:left;padding:12px 16px;font-weight:700;color:#1f2937}
+    .stat-tables .stat-table thead th{background:transparent;text-align:center;padding:12px 16px;font-weight:700;color:var(--muted)}
+    .stat-tables .stat-table tbody td:first-child{text-align:center;padding:12px 16px;font-weight:700;color:#1f2937}
     .stat-tables .stat-table tbody td:not(:first-child){text-align:center;padding:12px 16px;color:#1f2937}
     .stat-tables .stat-table tbody tr{border-bottom:1px solid var(--soft-border)}
     .stat-tables .stat-table tbody tr:nth-child(even){background:rgba(245,247,255,0.6)}
     .stat-tables .stat-table tbody tr:last-child{border-bottom:none}
+    /* 強化：讓面額與發券機構統計更為顯眼 */
+    #statByAmount td.amount-key .amount-pill{display:inline-flex;align-items:center;justify-content:center;padding:6px 10px;border-radius:12px;font-weight:900}
+    #statByAmount td.amount-key{font-size:15px;padding:12px 16px;text-align:center}
+    /* 數值用內部 span 顯示，避免 td 直接改成 inline-block 導致排版問題 */
+    #statByAmount .stat-value, #statByIssuer .stat-value{font-size:18px;font-weight:900;color:var(--accent)}
+    /* 使筆數與總額更為顯眼：淺色底、圓角、內距、最小寬度以利閱讀 */
+    #statByAmount .stat-value, #statByIssuer .stat-value{
+      background: rgba(91,77,245,0.08);
+      padding:8px 12px;
+      border-radius:10px;
+      display:inline-block;
+      min-width:64px;
+      text-align:center;
+    }
+    #statByIssuer td.issuer-key .issuer-badge{padding:6px 10px;border-radius:12px;font-weight:900}
+    /* 小標題提示顏色區塊 */
+    #statByAmount thead th, #statByIssuer thead th{background:transparent;color:var(--muted);font-weight:800}
     @media (max-width:720px){ .stat-tables .stat-table{width:100%} }
 
     /* Stats */
@@ -319,19 +346,25 @@
       $('statAvg').textContent = avg.toFixed(2);
 
       // --- 新增：按面額與按發券機構的分布表格 ---
-      // 計算按面額
+      // 計算按面額（僅計算表中顯示的已取得消費券）
       const amountBuckets = {'10':0,'20':0,'50':0,'100':0,'200':0};
       const amountSums = {'10':0,'20':0,'50':0,'100':0,'200':0};
-      // 計算按發券機構（動態）
+      // 計算按發券機構（動態，仍以所有紀錄為基礎）
       const issuerBuckets = {};
       const issuerSums = {};
-      records.forEach(r => {
+      // 只將目前表格中顯示的紀錄納入面額統計（與 render 的過濾條件一致）
+      const visibleRecords = records.filter(r => Number(r.remaining) > 0 && !isExpired(r));
+      visibleRecords.forEach(r => {
         const a = String(r.amount || '');
         const amt = Number(r.amount) || 0;
         if(amountBuckets.hasOwnProperty(a)){
           amountBuckets[a]++;
           amountSums[a] += amt;
         }
+      });
+      // 發券機構也改為僅統計表中顯示的已取得消費券（與面額統計一致）
+      visibleRecords.forEach(r => {
+        const amt = Number(r.amount) || 0;
         const iss = r.issuer || '未知';
         issuerBuckets[iss] = (issuerBuckets[iss]||0) + 1;
         issuerSums[iss] = (issuerSums[iss]||0) + amt;
@@ -345,7 +378,7 @@
         Object.keys(amountBuckets).forEach(k => {
           const cnt = amountBuckets[k] || 0;
           const sum = amountSums[k] || 0;
-          const tr = `<tr><td>${k} MOP</td><td>${cnt}</td><td>${sum}</td></tr>`;
+          const tr = `<tr><td class="amount-key"><span class="amount-pill amount-${k}">${k} MOP</span></td><td><span class="stat-value">${cnt}</span></td><td><span class="stat-value">${sum}</span></td></tr>`;
           tbody.insertAdjacentHTML('beforeend', tr);
         });
       }
@@ -358,7 +391,7 @@
         Object.keys(issuerBuckets).sort().forEach(k => {
           const cnt = issuerBuckets[k] || 0;
           const sum = issuerSums[k] || 0;
-          const tr = `<tr><td>${k}</td><td>${cnt}</td><td>${sum}</td></tr>`;
+          const tr = `<tr><td class="issuer-key"><span class="issuer-badge">${k}</span></td><td><span class="stat-value">${cnt}</span></td><td><span class="stat-value">${sum}</span></td></tr>`;
           tbody.insertAdjacentHTML('beforeend', tr);
         });
       }
