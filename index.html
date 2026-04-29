@@ -31,10 +31,17 @@
 
     /* Form layout */
     .row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:8px;align-items:flex-start}
+    /* Form-specific grid: issuer and amount share equal space; action (button) sits under amount on second row */
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto;gap:14px 14px;align-items:start;margin-bottom:8px}
+    .form-grid .col{min-width:0}
+    .form-grid .input-col{grid-row:1}
+    .form-grid .input-col:nth-of-type(1){grid-column:1}
+    .form-grid .input-col:nth-of-type(2){grid-column:2}
+    .form-grid .action-col{grid-column:2;grid-row:2;display:flex;align-items:center;justify-content:flex-end}
     label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px;}
     select,input[type="date"],input[type="number"]{padding:10px;border:1px solid #e6eaf7;border-radius:8px;width:100%;box-sizing:border-box;background:#fff}
     .col{flex:1 1 220px;min-width:160px}
-    @media (max-width:720px){ .row{flex-direction:column} .col{min-width:unset} }
+    @media (max-width:720px){ .row{flex-direction:column} .col{min-width:unset} .form-grid{grid-template-columns:1fr;grid-template-rows:auto auto auto} .form-grid .action-col{grid-column:1;grid-row:3;justify-content:flex-start} }
 
     /* Actions & buttons */
     .actions{display:flex;gap:8px;align-items:center;margin-top:8px}
@@ -68,6 +75,49 @@
 
     /* Unified cell text for issuer and status columns */
     .cell-text{font-family:var(--font);font-size:14px;color:#1f2937;display:inline-block;vertical-align:middle}
+    .issuer-badge{border-radius:14px;padding:10px 14px;font-weight:900;font-size:15px;display:inline-block;vertical-align:middle;box-shadow:0 4px 10px rgba(18,24,50,0.06)}
+    .amount-badge{display:inline-block;padding:10px 14px;border-radius:14px;font-weight:900;font-size:16px}
+    /* emphasize table columns for amount and issuer */
+    #listTable th.col-amount, #listTable th.col-issuer{font-size:15px;color:#111}
+    /* Use fixed table layout and evenly distribute columns for the voucher list */
+    #listTable{table-layout:fixed}
+    #listTable th, #listTable td{width:calc(100% / 7)}
+    /* Layout tuning for table columns and badges */
+    #listTable td.amount-cell, #listTable td.issuer-cell, #listTable td.remaining-cell, #listTable td.expiry-cell, #listTable td.ops-cell, #listTable td.redeem-cell {
+      vertical-align:middle; text-align:center; padding-top:14px; padding-bottom:14px;
+    }
+    /* Make amount and issuer badges visually centered and consistent */
+    .amount-badge{display:inline-flex;align-items:center;justify-content:center;padding:8px 12px;border-radius:16px;font-weight:900;font-size:14px;min-width:44px}
+    .issuer-badge{display:inline-flex;align-items:center;justify-content:center;padding:8px 14px;border-radius:16px;font-weight:900;font-size:14px;min-width:72px}
+    .remaining-badge{padding:6px 10px;border-radius:14px;background:#eef5ff;color:#0b3b8a;font-weight:700;font-size:13px;display:inline-flex;align-items:center;justify-content:center;min-width:40px}
+
+    /* Style buttons consistently */
+    #listTable .btn-primary{padding:8px 12px;border-radius:10px;min-width:68px}
+    #listTable .btn-link{padding:6px 8px}
+
+    /* Small stat tables inside statistics card */
+    .stat-tables .stat-table{background:#ffffff;border:1px solid var(--soft-border);border-radius:8px;overflow:hidden}
+    .stat-tables .stat-table th{background:#fbfcff;padding:8px 10px;font-weight:700;color:var(--muted);font-size:13px}
+    .stat-tables .stat-table td{padding:8px 10px;font-size:13px;text-align:center}
+
+    /* 更顯眼的統計文字：放大字級、加粗、數字使用主色系 */
+    .stat-tables .stat-table thead th{font-size:14px;color:#0f1724}
+    .stat-tables .stat-table tbody td:first-child{font-size:15px;color:#0f1724;font-weight:800}
+    .stat-tables .stat-table tbody td:nth-child(2),
+    .stat-tables .stat-table tbody td:nth-child(3){font-size:15px;font-weight:800;color:var(--accent)}
+    .stat-tables .stat-table tbody td{padding:12px 16px}
+    .stat-tables .stat-table tbody tr:hover{background:rgba(230,236,255,0.6)}
+
+    /* Enhanced stat table styling for clearer layout */
+    .stat-tables{width:100%;align-items:flex-start}
+    .stat-tables .stat-table{width:48%;min-width:220px;background:#fff;border-radius:10px;box-shadow:0 6px 18px rgba(18,24,50,0.04);overflow:hidden;border:1px solid var(--soft-border)}
+    .stat-tables .stat-table thead th{background:transparent;text-align:left;padding:12px 16px;font-weight:700;color:var(--muted)}
+    .stat-tables .stat-table tbody td:first-child{text-align:left;padding:12px 16px;font-weight:700;color:#1f2937}
+    .stat-tables .stat-table tbody td:not(:first-child){text-align:center;padding:12px 16px;color:#1f2937}
+    .stat-tables .stat-table tbody tr{border-bottom:1px solid var(--soft-border)}
+    .stat-tables .stat-table tbody tr:nth-child(even){background:rgba(245,247,255,0.6)}
+    .stat-tables .stat-table tbody tr:last-child{border-bottom:none}
+    @media (max-width:720px){ .stat-tables .stat-table{width:100%} }
 
     /* Stats */
     .stats{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px}
@@ -98,7 +148,7 @@
       .row{gap:10px}
       .col{flex:1 1 100%;min-width:0}
       select,input[type="date"],input[type="number"]{padding:12px;font-size:15px}
-      .actions{flex-direction:column;align-items:stretch;gap:8px}
+      .actions{flex-direction:row;align-items:center;gap:8px}
       button{padding:10px;border-radius:8px;font-size:15px}
       .stat .value{font-size:18px}
       .amount-badge{padding:5px 8px;font-size:12px}
@@ -106,6 +156,15 @@
       table{display:block;width:100%;overflow:auto;-webkit-overflow-scrolling:touch}
       thead,tbody,tr{display:table;width:100%;table-layout:fixed}
       th,td{white-space:nowrap;padding:8px}
+    }
+
+    /* Ensure button labels remain horizontal and do not wrap */
+    .actions button, .action-col .actions button {
+      white-space:nowrap;
+      writing-mode:horizontal-tb;
+      text-orientation:mixed;
+      line-height:1.1;
+      min-width:56px;
     }
   </style>
 </head>
@@ -160,8 +219,8 @@
     <!-- 新增券表單 -->
     <div class="card">
       <form id="voucherForm">
-        <div class="row">
-          <div class="col">
+        <div class="row form-grid">
+          <div class="col input-col">
             <label><strong>發券機構</strong></label>
             <select id="issuer">
               <option value="">-- 請選擇 --</option>
@@ -173,7 +232,7 @@
               <option value="工商">工商</option>
             </select>
           </div>
-          <div class="col">
+          <div class="col input-col">
             <label><strong>面額 MOP</strong></label>
             <select id="amount" required>
               <option value="">-- 請選擇 --</option>
@@ -184,42 +243,8 @@
               <option value="200">200</option>
             </select>
           </div>
-          <div class="col">
-            <label><strong>抽中日期</strong></label>
-            <select id="drawDate" required>
-              <option value="">-- 請選擇 --</option>
-              <option value="2026-04-10">10/04/2026</option>
-              <option value="2026-04-11">11/04/2026</option>
-              <option value="2026-04-12">12/04/2026</option>
-              <option value="2026-04-17">17/04/2026</option>
-              <option value="2026-04-18">18/04/2026</option>
-              <option value="2026-04-19">19/04/2026</option>
-              <option value="2026-04-24">24/04/2026</option>
-              <option value="2026-04-25">25/04/2026</option>
-              <option value="2026-04-26">26/04/2026</option>
-              <option value="2026-05-01">01/05/2026</option>
-              <option value="2026-05-02">02/05/2026</option>
-              <option value="2026-05-03">03/05/2026</option>
-              <option value="2026-05-08">08/05/2026</option>
-              <option value="2026-05-09">09/05/2026</option>
-              <option value="2026-05-10">10/05/2026</option>
-              <option value="2026-05-15">15/05/2026</option>
-              <option value="2026-05-16">16/05/2026</option>
-              <option value="2026-05-17">17/05/2026</option>
-              <option value="2026-05-22">22/05/2026</option>
-              <option value="2026-05-23">23/05/2026</option>
-              <option value="2026-05-24">24/05/2026</option>
-              <option value="2026-05-29">29/05/2026</option>
-              <option value="2026-05-30">30/05/2026</option>
-              <option value="2026-05-31">31/05/2026</option>
-              <option value="2026-06-05">05/06/2026</option>
-              <option value="2026-06-06">06/06/2026</option>
-              <option value="2026-06-07">07/06/2026</option>
-              <option value="2026-06-12">12/06/2026</option>
-              <option value="2026-06-13">13/06/2026</option>
-              <option value="2026-06-14">14/06/2026</option>
-            </select>
-            <div class="actions" style="margin-top:8px;">
+          <div class="col action-col">
+            <div class="actions">
               <button type="submit" id="saveBtn">新增紀錄</button>
             </div>
           </div>
@@ -234,12 +259,11 @@
         <thead>
           <tr>
             <th>抽中日期</th>
-            <th>面額</th>
-              <th>剩餘可核銷</th>
-              <th>到期日</th>
-            <th>發券機構</th>
-            <th>核銷狀態</th>
-            <!-- 已移除最後核銷日期欄位 -->
+            <th class="col-amount">面額 MOP</th>
+            <th class="col-issuer">發券機構</th>
+            <th>剩餘可核銷</th>
+            <th>到期日</th>
+            <!-- 核銷狀態欄位已移除 -->
             <th>操作</th>
             <th>核銷</th>
           </tr>
@@ -251,17 +275,23 @@
     <!-- 統計 -->
     <div class="card">
       <strong>統計</strong>
+        <!-- 先顯示統計表格（圖2），再顯示指標卡（圖1） -->
+        <div class="stat-tables" style="margin-top:0;margin-bottom:12px;display:flex;gap:12px;flex-wrap:wrap">
+          <table id="statByAmount" class="stat-table" style="border-collapse:collapse">
+            <thead><tr><th>面額</th><th>筆數</th><th>總額</th></tr></thead>
+            <tbody></tbody>
+          </table>
+          <table id="statByIssuer" class="stat-table" style="border-collapse:collapse">
+            <thead><tr><th>發券機構</th><th>筆數</th><th>總額</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
       <div class="stats">
         <div class="stat"><div class="small">總筆數</div><div id="statCount">0</div></div>
         <div class="stat"><div class="small">總中獎金額 MOP</div><div id="statTotal">0</div></div>
         <div class="stat"><div class="small">已核銷筆數</div><div id="statRedeemedCount">0</div></div>
         <div class="stat"><div class="small">已核銷金額 MOP</div><div id="statRedeemedTotal">0</div></div>
         <div class="stat"><div class="small">平均面額 MOP</div><div id="statAvg">0</div></div>
-        <div style="width:100%;margin-top:10px;display:flex;gap:8px;align-items:center;">
-          <button id="exportBtn" class="btn-link">匯出 JSON</button>
-          <button id="importBtn" class="btn-link">匯入 JSON</button>
-          <input type="file" id="importFile" accept="application/json" style="display:none" />
-        </div>
       </div>
     </div>
   </div>
@@ -287,6 +317,51 @@
       $('statRedeemedCount').textContent = redeemedCount;
       $('statRedeemedTotal').textContent = redeemedTotal.toFixed(0);
       $('statAvg').textContent = avg.toFixed(2);
+
+      // --- 新增：按面額與按發券機構的分布表格 ---
+      // 計算按面額
+      const amountBuckets = {'10':0,'20':0,'50':0,'100':0,'200':0};
+      const amountSums = {'10':0,'20':0,'50':0,'100':0,'200':0};
+      // 計算按發券機構（動態）
+      const issuerBuckets = {};
+      const issuerSums = {};
+      records.forEach(r => {
+        const a = String(r.amount || '');
+        const amt = Number(r.amount) || 0;
+        if(amountBuckets.hasOwnProperty(a)){
+          amountBuckets[a]++;
+          amountSums[a] += amt;
+        }
+        const iss = r.issuer || '未知';
+        issuerBuckets[iss] = (issuerBuckets[iss]||0) + 1;
+        issuerSums[iss] = (issuerSums[iss]||0) + amt;
+      });
+
+      // render amount table
+      const tbAmount = $('statByAmount');
+      if(tbAmount){
+        const tbody = tbAmount.querySelector('tbody');
+        tbody.innerHTML = '';
+        Object.keys(amountBuckets).forEach(k => {
+          const cnt = amountBuckets[k] || 0;
+          const sum = amountSums[k] || 0;
+          const tr = `<tr><td>${k} MOP</td><td>${cnt}</td><td>${sum}</td></tr>`;
+          tbody.insertAdjacentHTML('beforeend', tr);
+        });
+      }
+
+      // render issuer table
+      const tbIss = $('statByIssuer');
+      if(tbIss){
+        const tbody = tbIss.querySelector('tbody');
+        tbody.innerHTML = '';
+        Object.keys(issuerBuckets).sort().forEach(k => {
+          const cnt = issuerBuckets[k] || 0;
+          const sum = issuerSums[k] || 0;
+          const tr = `<tr><td>${k}</td><td>${cnt}</td><td>${sum}</td></tr>`;
+          tbody.insertAdjacentHTML('beforeend', tr);
+        });
+      }
     }
 
     // 檢查是否已到期 — 規則：抽中日（local） + 7 天，於當天 00:00 生效
@@ -330,24 +405,25 @@
       const tbody=$('listBody'); tbody.innerHTML='';
       // 只顯示尚未全額核銷且尚未到期的紀錄 (remaining > 0 且未過期)
       const visible = records.filter(r => Number(r.remaining) > 0 && !isExpired(r));
-      if(visible.length === 0){ tbody.innerHTML = '<tr><td colspan="8">目前沒有紀錄</td></tr>'; computeStats(); return; }
-      visible.forEach((r)=>{
+      if(visible.length === 0){ tbody.innerHTML = '<tr><td colspan="7">目前沒有紀錄</td></tr>'; computeStats(); return; }
+        visible.forEach((r)=>{
         if(Number(r.remaining) <= 0) return; // skip fully redeemed
         const realIdx = records.indexOf(r);
         const tr=document.createElement('tr');
+        // 計算發券機構顏色（使用現有的 getIssuerColors helper）
+        const _ic = getIssuerColors(r.issuer || '');
+        const _issuerStyle = `background:${_ic.bg};color:${_ic.color};border:1px solid ${_ic.border};padding:6px 10px;border-radius:12px;font-weight:800;display:inline-block;`;
         tr.innerHTML = `
           <td>${isoToDisplay(r.drawDate)}</td>
-            <td><span class="amount-badge amount-${r.amount}">${r.amount}</span></td>
-          <td><span class="remaining-badge">${r.remaining}</span></td>
-          <td>${formatLocalDate(getExpiryLocal(r.drawDate))}</td>
-          <td><span class="cell-text">${r.issuer || ''}</span></td>
-          <td><span class="cell-text">未全額</span></td>
-          <!-- 最後核銷日期已移除 -->
-          <td>
-            <button class="btn-link btn-plain" onclick="editRecord(${realIdx})">編輯</button>
+          <td class="amount-cell"><span class="amount-badge amount-${r.amount}">${r.amount}</span></td>
+          <td class="issuer-cell"><span class="issuer-badge" style="${_issuerStyle}">${r.issuer || ''}</span></td>
+          <td class="remaining-cell"><span class="remaining-badge">${r.remaining}</span></td>
+          <td class="expiry-cell">${formatLocalDate(getExpiryLocal(r.drawDate))}</td>
+          <!-- 核銷狀態欄位已移除 -->
+          <td class="ops-cell">
             <button class="btn-link btn-plain" onclick="removeRecord(${realIdx})">刪除</button>
           </td>
-          <td>
+          <td class="redeem-cell">
             <button class="btn-primary" onclick="redeem(${realIdx})">核銷</button>
           </td>
         `;
@@ -372,7 +448,6 @@
       const r = records[idx]; if(!r) return;
       $('issuer').value = r.issuer || '';
       $('amount').value = r.amount || '';
-      $('drawDate').value = r.drawDate || '';
       editIndex = idx; $('saveBtn').textContent = '更新紀錄';
     }
 
@@ -385,20 +460,22 @@
       e.preventDefault();
       const issuer = $('issuer').value;
       const amount = $('amount').value;
-      const drawDate = $('drawDate').value;
-      if(!amount || !drawDate){ alert('請選擇日期與面額'); return; }
+      const drawDate = todayIso();
+      if(!amount){ alert('請選擇面額'); return; }
       if(editIndex >= 0){
         const r = records[editIndex];
         const prevAmount = Number(r.amount) || 0;
         const prevRedeemed = prevAmount - (Number(r.remaining) || 0);
-        r.issuer = issuer; r.amount = amount; r.drawDate = drawDate;
+        r.issuer = issuer; r.amount = amount;
         r.remaining = Math.max(0, Number(amount) - prevRedeemed).toString();
         editIndex = -1; $('saveBtn').textContent = '新增紀錄';
       } else {
         const rec = { issuer, amount, drawDate, remaining: amount };
         records.push(rec);
       }
-      saveToStorage(); e.target.reset(); render();
+      saveToStorage(); e.target.reset();
+      const note = $('drawDateNote'); if(note) note.textContent = '';
+      render();
     });
 
     // 清空表單功能已移除
@@ -471,7 +548,7 @@
       }
     }
 
-    ['issuer','amount','drawDate'].forEach(id=>{
+    ['issuer','amount'].forEach(id=>{
       const s = $(id);
       if(!s) return;
       s.addEventListener('change', ()=> applySelectColor(s));
@@ -499,62 +576,13 @@
       const a = $('amount'); if(a){ for(let i=0;i<a.options.length;i++){ const opt=a.options[i]; const p=amountPal[opt.value]; if(p){ opt.style.backgroundColor=p.bg; opt.style.color=p.color; } } }
       const iss = $('issuer'); if(iss){ for(let i=0;i<iss.options.length;i++){ const opt=iss.options[i]; const p=issuerPal[opt.value]; if(p){ opt.style.backgroundColor=p.bg; opt.style.color=p.color; } } }
 
-      const d = $('drawDate'); if(d){ for(let i=0;i<d.options.length;i++){ const opt=d.options[i]; if(!opt.value) continue; const p = datePalette[i % datePalette.length]; opt.style.backgroundColor = p; opt.style.color = '#111'; } }
+      // drawDate select removed; no date option styling needed
     }
 
     styleOptions();
   </script>
   <script>
-    // 匯出 / 匯入 localStorage（只處理 localStorage 內的鍵值對）
-    function exportLocalStorage(){
-      try{
-        const raw = localStorage.getItem(STORAGE_KEY) || '[]';
-        const obj = {};
-        try{ obj[STORAGE_KEY] = JSON.parse(raw); } catch(e){ obj[STORAGE_KEY] = raw; }
-        const data = JSON.stringify(obj, null, 2);
-        const blob = new Blob([data], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = STORAGE_KEY + '.json'; document.body.appendChild(a); a.click(); a.remove();
-        URL.revokeObjectURL(url);
-      }catch(err){ alert('匯出失敗: '+err); }
-    }
-
-    function importVoucherKey(obj){
-      try{
-        if(!obj.hasOwnProperty(STORAGE_KEY)) { alert('匯入檔案內找不到 ' + STORAGE_KEY + ' 鍵。'); return; }
-        const incoming = obj[STORAGE_KEY] || [];
-        const existingRaw = localStorage.getItem(STORAGE_KEY) || '[]';
-        let existing = [];
-        try{ existing = JSON.parse(existingRaw); }catch(e){ existing = []; }
-        const overwrite = confirm('按「確定」將覆寫現有的 voucher_with_stats；按「取消」將合併匯入（加入現有紀錄）。');
-        if(overwrite){
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(incoming));
-        } else {
-          const merged = Array.isArray(existing) ? existing.concat(incoming) : [].concat(existing, incoming);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-        }
-        records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        render();
-        alert('匯入完成');
-      }catch(err){ alert('匯入失敗: '+err); }
-    }
-
-    document.getElementById('exportBtn').addEventListener('click', exportLocalStorage);
-    document.getElementById('importBtn').addEventListener('click', ()=> document.getElementById('importFile').click());
-    document.getElementById('importFile').addEventListener('change', function(e){
-      const file = this.files && this.files[0]; if(!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        try{
-          const obj = JSON.parse(reader.result);
-          if(typeof obj !== 'object' || obj === null) throw new Error('檔案格式錯誤');
-          importVoucherKey(obj);
-        }catch(err){ alert('讀取檔案失敗: '+err); }
-      };
-      reader.readAsText(file);
-      this.value = null;
-    });
+    // 匯入/匯出功能已移除
   </script>
 </body>
 </html>
